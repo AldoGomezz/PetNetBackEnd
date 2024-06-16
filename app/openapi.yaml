@@ -1,0 +1,1945 @@
+openapi: 3.0.0
+info:
+  title: Petnet API's Doc
+  description: This file content all the routes on Petnet application.
+  version: 1.0.0
+
+servers:
+  - url: "https://petnet-8e037ce96247.herokuapp.com"
+    description: Main production server.
+  - url: "htpp://localhost:5000"
+    description: Internal staging server for development.
+tags:
+  - name: Petnet-Auth
+  - name: Petnet-Users
+  - name: Petnet-Resnet
+  - name: Petnet-Patient
+  - name: Petnet-Owner
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Petnet-Auth
+      summary: Register a new user
+      description: Register a new user with the provided details.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                first_name:
+                  type: string
+                  description: The first name of the user.
+                last_name:
+                  type: string
+                  description: The last name of the user.
+                email:
+                  type: string
+                  format: email
+                  description: The email address of the user.
+                clinic:
+                  type: string
+                  description: The clinic name associated with the user.
+                username:
+                  type: string
+                  description: The username chosen by the user.
+                password:
+                  type: string
+                  format: password
+                  description: The password chosen by the user.
+                confirm_password:
+                  type: string
+                  format: password
+                  description: The confirmation of the password chosen by the user.
+              required:
+                - first_name
+                - last_name
+                - email
+                - clinic
+                - username
+                - password
+                - confirm_password
+      responses:
+        '201':
+          description: User created successfully. Confirmation email sent.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating the success of user creation and email confirmation.
+        '400':
+          description: Bad Request. Invalid input or passwords do not match.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating the failure due to invalid input or mismatched passwords.
+        '401':
+          description: Unauthorized. User or email already exists.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating the failure due to existing user or email.
+        '500':
+          description: Internal Server Error. An error occurred while creating user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating the failure due to an internal server error.
+                  error:
+                    type: string
+                    description: Additional information about the error.
+  /auth/confirm_email/{token}:
+    get:
+      tags:
+        - Petnet-Auth
+      summary: Confirm user email
+      description: |
+        Confirm the user's email address using the provided token.
+      parameters:
+        - in: path
+          name: token
+          required: true
+          description: The token for confirming the user's email.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Email confirmed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating the success of email confirmation or update.
+        '401':
+          description: Unauthorized. Invalid token to confirm email.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating the failure to confirm email due to an invalid token.
+        '500':
+          description: Internal Server Error. An error occurred while confirming email.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating the failure to confirm email due to an internal server error.
+                  error:
+                    type: string
+                    description: Additional information about the error.
+  /auth/login:
+    post:
+      tags:
+        - Petnet-Auth
+      summary: Login a user
+      description: Authenticate a user by username and password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: The username of the user.
+                password:
+                  type: string
+                  format: password
+                  description: The password of the user.
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: User authenticated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT token for authenticated user.
+        '400':
+          description: Bad Request. Invalid input or missing username or password.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating the failure due to missing or invalid input.
+        '401':
+          description: Unauthorized. Invalid credentials or unconfirmed account.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating the failure to authenticate due to invalid credentials or unconfirmed account.
+        '404':
+          description: Not Found. User does not exist.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating the user does not exist.
+  /auth/logout:
+    post:
+      tags:
+        - Petnet-Auth
+      summary: Logout a user
+      description: Logs out a user from the system.
+      responses:
+        '200':
+          description: User logged out successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating successful user logout.
+  /auth/renew_token:
+    get:
+      tags:
+        - Petnet-Auth
+      summary: Renew the token
+      description: Renews the token of the authenticated user.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Token renewed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: The renewed JWT token.
+        '401':
+          description: Unauthorized. Invalid or expired token.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating that the token is invalid or expired.
+        '500':
+          description: Internal Server Error. Error renewing the token.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure during token renewal.  
+  /users/information:
+    get:
+      tags:
+        - Petnet-Users
+      summary: Get user information.
+      description: Retrieves user information.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: User information retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                    description: The ID of the user.
+                  first_name:
+                    type: string
+                    description: The first_name of the user.
+                  last_name:
+                    type: string
+                    description: The last_name of the user.
+                  email:
+                    type: string
+                    description: The email of the user.
+                  clinic:
+                    type: string
+                    description: The clinic name of the user
+                  username:
+                    type: string
+                    description: The username of the user.
+                  confirmed:
+                    type: boolean
+                    description: Bool if the user is confirmed.
+        '400':
+          description: Bad Request. Error retrieving user information.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure to retrieve user information.
+                  error:
+                    type: string
+                    description: Additional information about the error.
+        '401':
+          description: Unauthorized. Invalid or missing token.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to invalid or missing token.
+  /users/profile_photo/{user_id}:
+    get:
+      tags:
+        - Petnet-Users
+      summary: Get user profile photo
+      description: Retrieves and serves the profile photo of a user.
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          description: The ID of the user.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Profile photo served successfully.
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+                description: The profile photo of the user.
+        '404':
+          description: Not Found. User or profile photo not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to user not found or no profile photo available.
+  /users/update/information:
+    put:
+      tags:
+        - Petnet-Users
+      summary: Update user information.
+      description: Updates user information.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                first_name:
+                  type: string
+                  description: The first name of the user.
+                last_name:
+                  type: string
+                  description: The last name of the user.
+                clinic:
+                  type: string
+                  description: The clinic name associated with the user.
+                username:
+                  type: string
+                  description: The username chosen by the user.
+                address:
+                  type: string
+                  description: The address of the clinic.
+                college_number:
+                  type: string
+                  description: Collegue number of the vet doc.
+                
+              required:
+                - first_name
+                - last_name
+                - clinic
+                - address
+                - college_number
+      responses:
+        '200':
+          description: User information updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating successful user information update.
+        '400':
+          description: Bad Request. Error updating user information.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure to update user information.
+                  error:
+                    type: string
+                    description: Additional information about the error.
+        '401':
+          description: Unauthorized. Invalid or missing token.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to invalid or missing token.
+  /users/update/password:
+    put:
+      tags:
+        - Petnet-Users
+      summary: Update user password
+      description: Updates the password of the user.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                actual_password:
+                  type: string
+                  format: password
+                  description: The current password of the user.
+                new_password:
+                  type: string
+                  format: password
+                  description: The new password for the user.
+                confirm_password:
+                  type: string
+                  format: password
+                  description: The confirmation of the new password.
+              required:
+                - actual_password
+                - new_password
+                - confirm_password
+      responses:
+        '200':
+          description: User password updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating successful password update.
+        '400':
+          description: Bad Request. Error updating user password.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure to update user password.
+                  error:
+                    type: string
+                    description: Additional information about the error.
+        '401':
+          description: Unauthorized. Invalid or missing token.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to invalid or missing token.   
+  /users/restore/password/verify:
+    post:
+      tags:
+        - Petnet-Users
+      summary: Verify restored password
+      description: Restore the password using the code sent to the user email.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  description: The verification code sent to the user email.
+                token:
+                  type: string
+                  description: The token associated with the code verification.
+              required:
+                - code
+                - token
+      responses:
+        '200':
+          description: Code verified successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating successful code verification.
+                  user_id:
+                    type: string
+                    description: The ID of the user for whom the code was verified.
+        '400':
+          description: Bad Request. Invalid code or token.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to invalid code or token.
+        '404':
+          description: Not Found. User not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to user not found.
+  /users/restore/password/update:
+    post:
+      tags:
+        - Petnet-Users
+      summary: Update restored password
+      description: Update the password using the code sent to the user email.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  description: The ID of the user.
+                new_password:
+                  type: string
+                  format: password
+                  description: The new password for the user.
+                confirm_password:
+                  type: string
+                  format: password
+                  description: The confirmation of the new password.
+              required:
+                - user_id
+                - new_password
+                - confirm_password
+      responses:
+        '200':
+          description: Password updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating successful password update.
+        '400':
+          description: Bad Request. Error updating user password.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure to update user password.
+                  error:
+                    type: string
+                    description: Additional information about the error.
+        '404':
+          description: Not Found. User not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to user not found.
+  /users/update/email:
+    post:
+      tags:
+        - Petnet-Users
+      summary: Update user email.
+      description: Update the email address of the user.
+
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                new_email:
+                  type: string
+                  format: email
+                  description: The new email address for the user.
+              required:
+                - new_email
+      responses:
+        '200':
+          description: Email update requested successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating successful email update request.
+        '400':
+          description: Bad Request. Error updating user email.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure to update user email.
+                  error:
+                    type: string
+                    description: Additional information about the error.
+        '404':
+          description: Not Found. User not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to user not found.
+  /users/delete:
+    delete:
+      tags:
+        - Petnet-Users
+      summary: Delete user.
+      description: Deletes a user.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: User deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating successful user deletion.
+        '500':
+          description: Internal Server Error. Error deleting user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure to delete user.
+                  error:
+                    type: string
+                    description: Additional information about the error.
+  /resnet/predict:
+    post:
+      tags:
+        - Petnet-Resnet
+      summary: Predict image class
+      description: Predicts the class of an image using a pre-trained ResNet model.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The image file to be classified.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Successful prediction.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  class_name:
+                    type: string
+                    description: The predicted class name of the image.
+                  probability:
+                    type: number
+                    format: float
+                    description: The probability of the predicted class.
+        '400':
+          description: Bad Request. No image file provided.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to no image file provided.
+        '500':
+          description: Internal Server Error. Error during prediction.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure during prediction.
+  /resnet/predict/save/photo/{photo_id}:
+    post:
+      tags:
+        - Petnet-Resnet
+      summary: Save prediction for a photo
+      description: Saves the prediction associated with a photo in the database.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: photo_id
+          in: path
+          description: The ID of the photo.
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                predicted_class:
+                  type: string
+                  description: The predicted class name.
+                probability:
+                  type: number
+                  description: The probability of the prediction.
+              required:
+                - predicted_class
+                - probability
+      responses:
+        '200':
+          description: Prediction saved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  predicted_class:
+                    type: string
+                    description: The predicted class name.
+                  probability:
+                    type: number
+                    description: The probability of the prediction.
+        '400':
+          description: Bad Request. Error occurred while saving prediction.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating the error occurred while saving prediction.
+        '404':
+          description: Not Found. The specified photo ID was not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating that the specified photo was not found.
+  /resnet/predict/photo/{photo_id}:
+    get:
+      tags:
+        - Petnet-Resnet
+      summary: Predict the class of a photo
+      description: Predicts the class of the specified photo.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: photo_id
+          in: path
+          description: The ID of the photo.
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Prediction retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  predicted_class:
+                    type: string
+                    description: The predicted class name.
+                  probability:
+                    type: string
+                    description: The probability of the prediction.
+        '400':
+          description: Bad Request. Error occurred while predicting.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating the error occurred while predicting.
+        '404':
+          description: Not Found. The specified photo ID was not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating that the specified photo was not found.                                        
+  /patients/register:
+    post:
+      tags:
+        - Petnet-Patient
+      summary: Register a patient
+      description: Registers a new patient with the provided information.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                nickname:
+                  type: string
+                  description: The nickname of the patient.
+                age:
+                  type: integer
+                  description: The age of the patient.
+                weight:
+                  type: number
+                  description: The weight of the patient.
+                owner_id:
+                  type: integer
+                  description: The ID of the owner of the patient.
+                profile_photo:
+                  type: string
+                  format: binary
+                  description: The profile photo of the patient (base64 encoded image).
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '201':
+          description: Patient created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating successful patient creation.
+                  patient:
+                    $ref: '#/components/schemas/Patient'
+        '400':
+          description: Bad Request. Missing required fields or profile photo.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to missing required fields or profile photo.
+        '500':
+          description: Internal Server Error. Error creating patient.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure during patient creation.
+                  error:
+                    type: string
+                    description: Additional information about the error.
+  /patients/profile_photo/{patient_id}:
+    get:
+      tags:
+        - Petnet-Patient
+      summary: Get patient profile photo
+      description: Retrieves and serves the profile photo of a patient.
+      parameters:
+        - in: path
+          name: patient_id
+          required: true
+          description: The ID of the patient.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Profile photo served successfully.
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+                description: The profile photo of the patient.
+        '404':
+          description: Not Found. Patient or profile photo not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to patient not found or no profile photo available.
+  /patients/collection/photos/add:
+    post:
+      tags:
+        - Petnet-Patient
+      summary: Add a photo to a patient's collection
+      description: Adds a photo to the collection of a patient.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                photo:
+                  type: string
+                  format: binary
+                  description: The photo to be added (base64 encoded image).
+                patient_id:
+                  type: integer
+                  description: The ID of the patient.
+                description:
+                  type: string
+                  description: Optional description for the photo.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '201':
+          description: Photo added successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating successful photo addition.
+                  photo:
+                    $ref: "#/components/schemas/Photo"
+        '400':
+          description: Bad Request. Missing required fields or photo.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to missing required fields or photo.
+        '500':
+          description: Internal Server Error. Error adding photo.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure during photo addition.
+                  error:
+                    type: string
+                    description: Additional information about the error.
+  /patients/collection/photos/{photo_id}:
+    get:
+      tags:
+        - Petnet-Patient
+      summary: Get patient photo
+      description: Retrieves and serves the photo of a patient from the collection.
+      parameters:
+        - in: path
+          name: photo_id
+          required: true
+          description: The ID of the photo.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Photo served successfully.
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+                description: The photo of the patient.
+        '404':
+          description: Not Found. Photo not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to photo not found.
+  /patients/information/{patient_id}:
+    get:
+      tags:
+        - Petnet-Patient
+      summary: Get patient information
+      description: Retrieves information about a specific patient.
+      parameters:
+        - in: path
+          name: patient_id
+          required: true
+          description: The ID of the patient.
+          schema:
+            type: integer
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Patient information retrieved successfully.
+          content:
+            application/json:
+              schema:
+                  $ref: "#/components/schemas/Patient"                   
+        '404':
+          description: Not Found. Patient not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to patient not found.
+  /patients/search:
+    get:
+      tags:
+        - Petnet-Patient
+      summary: Search for patients
+      description: Searches for patients based on a query string. Use  '*' to get all the patients registered.
+      parameters:
+        - in: query
+          name: s
+          required: true
+          description: The search query string.
+          schema:
+            type: string
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Patients found successfully.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Patient'
+        '400':
+          description: Bad Request. Missing search query.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to missing search query.
+        '404':
+          description: Not Found. Patients not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to inability to find patients.
+  /patients/update/information/{patient_id}:
+    put:
+      tags:
+        - Petnet-Patient
+      summary: Update patient information
+      description: Updates the information of a specific patient.
+      parameters:
+        - in: path
+          name: patient_id
+          required: true
+          description: The ID of the patient.
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nickname:
+                  type: string
+                  description: The nickname of the patient.
+                age:
+                  type: integer
+                  description: The age of the patient.
+                weight:
+                  type: number
+                  description: The weight of the patient.
+              required:
+                - nickname
+                - age
+                - weight
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Patient information updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating successful update.
+                  patient:
+                    $ref: "#/components/schemas/Patient"
+        '400':
+          description: Bad Request. Missing required fields.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to missing required fields.
+        '404':
+          description: Not Found. Patient not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to patient not found.
+        '500':
+          description: Internal Server Error. Error updating patient.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure during patient update.
+                  error:
+                    type: string
+                    description: Additional information about the error.
+  /patients/update/profile_photo/{patient_id}:
+    put:
+      tags:
+        - Petnet-Patient
+      summary: Update patient profile photo
+      description: Updates the profile photo of a specific patient.
+      parameters:
+        - in: path
+          name: patient_id
+          required: true
+          description: The ID of the patient.
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                profile_photo:
+                  type: string
+                  format: binary
+                  description: The profile photo of the patient (base64 encoded).
+              required:
+                - profile_photo
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Profile photo updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating successful update.
+                  patient:
+                    $ref: "#/components/schemas/Patient"
+        '400':
+          description: Bad Request. Missing profile photo.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to missing profile photo.
+        '500':
+          description: Internal Server Error. Error updating profile photo.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure during profile photo update.
+                  error:
+                    type: string
+                    description: Additional information about the error.                    
+  /patients/delete/{patient_id}:
+    delete:
+      tags:
+        - Petnet-Patient
+      summary: Delete a patient
+      description: Deletes a specific patient.
+      parameters:
+        - in: path
+          name: patient_id
+          required: true
+          description: The ID of the patient to delete.
+          schema:
+            type: integer
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Patient deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating successful deletion.
+        '500':
+          description: Internal Server Error. Error deleting patient.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure during deletion.
+                  error:
+                    type: string
+                    description: Additional information about the error.
+  /patients/generate:
+    post:
+      tags:
+        - Petnet-Patient
+      summary: Generate a patient
+      description: Generates a new patient with information.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GenPatient'
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '201':
+          description: Patient generated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating successful generation.
+                  patient:
+                    $ref: '#/components/schemas/Patient'
+        '400':
+          description: Bad Request. Missing required fields.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to missing required fields or email already registered.
+        '500':
+          description: Internal Server Error. Error generating patient.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure during generation.
+                  error:
+                    type: string
+                    description: Additional information about the error.
+  /patients/generate/pdf/{patient_id}:
+    get:
+      tags:
+        - Petnet-Patient
+      summary: Sending information to generate a PDF
+      description: Sends the information of a patient to generate a PDF file.
+      parameters:
+        - in: path
+          name: patient_id
+          required: true
+          description: The ID of the patient.
+          schema:
+            type: integer
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: PDF data sent successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientPDF'
+                  
+        '404':
+          description: Not Found. Patient not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure due to patient not found.
+        '500':
+          description: Internal Server Error. Error sending PDF data.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure during sending PDF data.
+                  error:
+                    type: string
+                    description: Additional information about the error.
+
+  /owner/register:
+    post:
+      tags:
+        - Petnet-Owner
+      summary: Register an owner
+      description: Registers a new owner with the provided information.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                first_name:
+                  type: string
+                  description: The first name of the owner.
+                last_name:
+                  type: string
+                  description: The last name of the owner.
+                email:
+                  type: string
+                  format: email
+                  description: The email address of the owner.
+                phone_number:
+                  type: string
+                  description: The phone number of the owner.
+                document:
+                  type: string
+                  description: The document number of the owner.
+              required:
+                - first_name
+                - last_name
+                - email
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '201':
+          description: Owner registered successfully.
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/Owner'
+                  
+        '400':
+          description: Bad Request. Invalid input data or email already registered.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating the reason for the failure.
+        '500':
+          description: Internal Server Error. Error registering the owner.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure during registration.
+                  error:
+                    type: string
+                    description: Additional information about the error.    
+  /owner/search:
+    get:
+      tags:
+        - Petnet-Owner
+      summary: Search for owners
+      description: Searches for owners based on a query string. Use  '*' to get all the owners registered.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: s
+          in: query
+          description: The search query string.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Owners found successfully.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Owner'                
+        '400':
+          description: Bad Request. The query parameter is missing.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating that the query parameter is missing.
+        '404':
+          description: Not Found. No owners found matching the search query.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating that no owners were found matching the search query.                    
+  /owner/update/information/{owner_id}:
+    put:
+      tags:
+        - Petnet-Owner
+      summary: Update owner information
+      description: Updates the information of an owner with the provided owner_id.
+      parameters:
+        - in: path
+          name: owner_id
+          required: true
+          description: The ID of the owner to update.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                first_name:
+                  type: string
+                  description: The updated first name of the owner.
+                last_name:
+                  type: string
+                  description: The updated last name of the owner.
+                email:
+                  type: string
+                  format: email
+                  description: The updated email address of the owner.
+                phone_number:
+                  type: string
+                  description: The updated phone number of the owner.
+                document:
+                  type: string
+                  description: The updated document number of the owner.
+              required:
+                - first_name
+                - last_name
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Owner information updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating the success of the update operation.
+                  owner:
+                    $ref: '#/components/schemas/Owner'
+                    
+        '400':
+          description: Bad Request. Invalid input data or email already registered.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating the reason for the failure.
+        '404':
+          description: Owner not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating that the owner was not found.
+        '500':
+          description: Internal Server Error. Error updating owner information.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure during the update operation.
+                  error:
+                    type: string
+                    description: Additional information about the error.       
+  /owner/get/information/{owner_id}:
+    get:
+      tags:
+        - Petnet-Owner
+      summary: Get owner information by ID
+      parameters:
+        - in: path
+          name: owner_id
+          required: true
+          schema:
+            type: integer
+          description: The ID of the owner to retrieve.
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating the success of the operation.
+                  owner:
+                    $ref: '#/components/schemas/Owner'
+        '404':
+          description: Owner not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating that the owner was not found.
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating that there was an error getting owner information.
+                  error:
+                    type: string
+                    description: A description of the error.                    
+  /owner/delete/{owner_id}:
+    delete:
+      tags:
+        - Petnet-Owner
+      summary: Delete an owner
+      description: Deletes the owner with the provided owner_id.
+      parameters:
+        - in: path
+          name: owner_id
+          required: true
+          description: The ID of the owner to delete.
+          schema:
+            type: integer
+            format: int64
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Owner deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating the success of the deletion operation.
+        '404':
+          description: Owner not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating that the owner was not found.
+        '500':
+          description: Internal Server Error. Error deleting the owner.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating failure during the deletion operation.
+                  error:
+                    type: string
+                    description: Additional information about the error.   
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          description: The unique identifier of the user.
+        first_name:
+          type: string
+          description: The first name of the user.
+        last_name:
+          type: string
+          description: The last name of the user.
+        email:
+          type: string
+          format: email
+          description: The email address of the user.
+        clinic:
+          type: string
+          description: The clinic associated with the user.
+        username:
+          type: string
+          description: The username of the user.
+        confirmed:
+          type: boolean
+          description: Indicates if the user account is confirmed.
+        patients:
+          type: array
+          items:
+            $ref: '#/components/schemas/Patient'
+          description: List of patients associated with the user.
+    Patient:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: The unique identifier of the patient.
+        nickname:
+          type: string
+          description: The nickname of the patient.
+        age:
+          type: integer
+          description: The age of the patient.
+        date_of_register:
+          type: string
+          format: date-time
+          description: The date of registration of the patient.
+        weight:
+          type: number
+          description: The weight of the patient.
+        profile_photo:
+          type: string
+          format: uri
+          description: The URL of the profile photo of the patient.
+        user_id:
+          type: integer
+          description: The ID of the user associated with the patient.
+        owner_id:
+          type: integer
+          description: The ID of the owner associated with the patient.
+        photos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Photo'
+          description: List of photos associated with the patient.
+    Photo:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: The unique identifier of the photo.
+        photo:
+          type: string
+          format: uri
+          description: The URL of the photo.
+        filename:
+          type: string
+          description: The filename of the photo.
+        date_of_register:
+          type: string
+          format: date-time
+          description: The date of registration of the photo.
+        patient_id:
+          type: integer
+          description: The ID of the patient associated with the photo.
+        description:
+          type: string
+          description: Description of the photo.
+        probability:
+          type: number
+          description: Probability associated with the photo.
+        predicted_class:
+          type: string
+          description: Predicted class associated with the photo. 
+    Owner:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: The unique identifier of the owner.
+        first_name:
+          type: string
+          description: The first name of the owner.
+        last_name:
+          type: string
+          description: The last name of the owner.
+        email:
+          type: string
+          format: email
+          description: The email address of the owner.
+        phone_number:
+          type: string
+          description: The phone number of the owner.
+        document:
+          type: string
+          description: The document information of the owner.
+        patients:
+          type: array
+          items:
+            $ref: '#/components/schemas/Patient'
+          description: List of patients associated with the owner.
+    GenPatient:
+      type: object
+      properties:
+        first_name:
+          type: string
+          description: The first name of the Owner.
+        last_name:
+          type: string
+          description: The last name of the Owner.
+        email:
+          type: string
+          format: email
+          description: The email address of the Owner.
+        phone_number:
+          type: string
+          description: The phone number of the Owner.
+        document:
+          type: string
+          description: The document information of the Owner.
+        nickname:
+          type: string
+          description: The nickname of the patient.
+        age:
+          type: integer
+          description: The age of the patient.
+        weight:
+          type: integer
+          description: The weight of the patient.
+        profile_photo:
+          type: string
+          format: binary
+          description: The profile photo of the patient.
+        analyzed_photo:
+          type: string
+          format: binary
+          description: The analyzed photo of the patient.
+        description:
+          type: string
+          description: Description of the photo.
+        class_name:
+          type: string
+          description: Predicted class associated with the photo.
+        probability:
+          type: string
+          description: Probability associated with the photo.
+
+    PatientPDF:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            first_name:
+              type: string
+              description: The first name of the user.
+            last_name:
+              type: string
+              description: The last name of the user.
+            email:
+              type: string
+              format: email
+              description: The email address of the user.
+            clinic:
+              type: string
+              description: The clinic associated with the user.
+            addres:
+              type: string
+              description: The address of the user.
+            college_number:
+              type: string
+              description: The college number of the user.
+        patient:
+          $ref: '#/components/schemas/Patient'
+        owner:
+          type: object
+          properties:
+            first_name:
+              type: string
+              description: The first name of the owner.
+            last_name:
+              type: string
+              description: The last name of the owner.
+            phone_number:
+              type: string
+              description: The phone number of the owner.
+            document:
+              type: string
+              description: The document information of the owner.
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization 
+security:
+  - ApiKeyAuth: []

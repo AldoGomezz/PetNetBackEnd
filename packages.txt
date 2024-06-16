@@ -1,0 +1,11 @@
+# pip install Flask
+# pip install PyJWT
+# pip3 install torch torchvision   -f https://download.pytorch.org/whl/torch_stable.html  
+# torch==2.2.2+cpu
+# torchvision==0.17.2+cpu
+# pip install psycopg2
+# pip install flask-sqlalchemy
+# pip install flask-mail
+# pip install dotenv
+# pip install gunicorn
+# pip install pytz
